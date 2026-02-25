@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/entry.dart';
-import '../models/reflection.dart';
+import '../models/conversation.dart';
+import '../models/message.dart';
 
 class SupabaseService {
   final _client = Supabase.instance.client;
@@ -21,60 +21,88 @@ class SupabaseService {
 
   String? get currentUserId => _client.auth.currentUser?.id;
 
-  // --- Entries ---
+  // --- Conversations ---
 
-  Future<List<Entry>> fetchEntries() async {
+  Future<List<Conversation>> fetchConversations() async {
     final userId = currentUserId;
     if (userId == null) return [];
 
     final data = await _client
-        .from('entries')
+        .from('conversations')
         .select()
         .eq('user_id', userId)
         .order('created_at', ascending: false);
 
-    return (data as List).map((e) => Entry.fromJson(e)).toList();
+    return (data as List).map((e) => Conversation.fromJson(e)).toList();
   }
 
-  Future<Entry> createEntry(String content) async {
+  Future<Conversation> createConversation({
+    String title = 'Neues Gespräch',
+    int? steps,
+    String? location,
+    String? weather,
+  }) async {
     final userId = currentUserId!;
+
     final data = await _client
-        .from('entries')
-        .insert({'user_id': userId, 'content': content})
+        .from('conversations')
+        .insert({
+          'user_id': userId,
+          'title': title,
+          'steps': steps,
+          'location': location,
+          'weather': weather,
+        })
         .select()
         .single();
 
-    return Entry.fromJson(data);
+    return Conversation.fromJson(data);
   }
 
-  Future<void> deleteEntry(String entryId) async {
-    await _client.from('entries').delete().eq('id', entryId);
+  Future<void> updateConversationSummary({
+    required String conversationId,
+    required String title,
+    required String subtitle,
+    required String summary,
+  }) async {
+    await _client.from('conversations').update({
+      'title': title,
+      'subtitle': subtitle,
+      'summary': summary,
+    }).eq('id', conversationId);
   }
 
-  // --- Reflections ---
+  Future<void> deleteConversation(String conversationId) async {
+    await _client.from('conversations').delete().eq('id', conversationId);
+  }
 
-  Future<List<Reflection>> fetchReflections(String entryId) async {
+  // --- Messages ---
+
+  Future<List<Message>> fetchMessages(String conversationId) async {
     final data = await _client
-        .from('reflections')
+        .from('messages')
         .select()
-        .eq('entry_id', entryId)
+        .eq('conversation_id', conversationId)
         .order('created_at', ascending: true);
 
-    return (data as List).map((r) => Reflection.fromJson(r)).toList();
+    return (data as List).map((m) => Message.fromJson(m)).toList();
   }
 
-  Future<Reflection> createReflection(String entryId, String content) async {
-    final userId = currentUserId!;
+  Future<Message> createMessage({
+    required String conversationId,
+    required String role,
+    required String content,
+  }) async {
     final data = await _client
-        .from('reflections')
+        .from('messages')
         .insert({
-          'entry_id': entryId,
-          'user_id': userId,
+          'conversation_id': conversationId,
+          'role': role,
           'content': content,
         })
         .select()
         .single();
 
-    return Reflection.fromJson(data);
+    return Message.fromJson(data);
   }
 }

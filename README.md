@@ -38,6 +38,8 @@ Dann starten mit:
 make run
 ```
 
+Die App läuft dann auf http://localhost:8080 – im Terminal mit **Cmd + Klick** direkt öffnen.
+
 ## Projektstruktur
 
 ```
