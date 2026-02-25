@@ -42,11 +42,7 @@ class _ReflectionScreenState extends State<ReflectionScreen> {
   void dispose() {
     _controller.dispose();
     _scrollController.dispose();
-    if (widget.isNewDay) {
-      context.read<EntryProvider>().finalizeConversation();
-    } else {
-      context.read<EntryProvider>().clearMessages();
-    }
+    context.read<EntryProvider>().clearMessages();
     super.dispose();
   }
 
@@ -75,8 +71,15 @@ class _ReflectionScreenState extends State<ReflectionScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return PopScope(
-      onPopInvokedWithResult: (didPop, result) {
-        // finalizeConversation wird in dispose() aufgerufen
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final provider = context.read<EntryProvider>();
+        final nav = Navigator.of(context);
+        if (widget.isNewDay) {
+          await provider.finalizeConversation();
+        }
+        nav.pop();
       },
       child: SelectionArea(
         child: Scaffold(
